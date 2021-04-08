@@ -1,0 +1,24 @@
+version: '3.6'
+
+
+
+services:
+  nats-server:
+    command:
+      - "-p"
+      - "4222"
+      - "-m"
+      - "8222"
+    ports:
+      - 4222:4222
+      - 8222:8222
+    image: nats:latest
+  app:
+    volumes:
+      - ./app:/microservice
+      - ./config:/config # add configs if required
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
