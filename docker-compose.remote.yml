@@ -11,4 +11,4 @@ services:
       context: .
       dockerfile: Dockerfile
     env_file:
-      - .env.remote
+      - environments/.env.remote

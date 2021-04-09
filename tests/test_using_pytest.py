@@ -4,7 +4,7 @@ from panini.test_client import TestClient
 
 from app.utils import get_broker
 
-BROKER_HOST, BROKER_PORT = get_broker()
+BROKER_HOST, BROKER_PORT = get_broker(True)
 
 
 def run_app():
