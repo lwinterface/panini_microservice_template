@@ -1,15 +1,29 @@
 import os
 import yaml
 
-PATH = './config/' if 'HOSTNAME' in os.environ else '../config/'
+from dotenv import load_dotenv
 
-def get_broker():
-    broker_host = os.environ['BROKER_HOST'] if 'HOSTNAME' in os.environ and 'BROKER_HOST' in os.environ else '127.0.0.1'
-    broker_port = os.environ['BROKER_PORT'] if 'BROKER_PORT' in os.environ else '4222'
+PATH = './config/' if 'HOSTNAME' in os.environ else '../config/'
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+
+def load_env(is_test=False):
+    if 'HOSTNAME' not in os.environ:
+        if os.environ.get("PANINI_TEST_MODE") or is_test:
+            load_dotenv(os.path.join(BASE_DIR, "environments", ".env.test"))
+        else:
+            load_dotenv(os.path.join(BASE_DIR, "environments", ".env.dev"))
+
+
+def get_broker(is_test=False):
+    load_env(is_test)
+    broker_host = os.environ['BROKER_HOST']
+    broker_port = os.environ['BROKER_PORT']
     return broker_host, broker_port
 
 
-def get_config_path():
+def get_config_path(is_test=False):
+    load_env(is_test)
     return os.environ['CONFIG_PATH']
 
 

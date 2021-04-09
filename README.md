@@ -17,7 +17,7 @@ How to run project with connection to remote NATS server:
 
 `docker-compose -f docker-compose.remote.yml up --build`
 
-(required `.env.remote` file that shouldn't be included in repository)
+(required `requirements/.env.remote` file that shouldn't be included in repository)
 
 How to install dev requirements locally(required for tests):
 

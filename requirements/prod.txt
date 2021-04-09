@@ -1,2 +1,3 @@
 panini==0.2.3
 PyYAML==5.1.2
+python-dotenv==0.17.0
