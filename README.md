@@ -27,6 +27,11 @@ How to run tests with XML report:
 
 `python3 -m pytest --junitxml=test-results/out.xml`
 
+### Codestyle
+- we are using `black`, `flake8` and `pre-commit` (for management)
+- run `pre-commit install` locally to initialize codestyle checks before each commit
+- modify `pyproject.toml` or `.flake8` configuration if needed
+
 ### NATS subjects
 
 Sending:
