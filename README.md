@@ -19,9 +19,13 @@ How to run project with connection to remote NATS server:
 
 (required `.env.remote` file that shouldn't be included in repository)
 
-How to install requirements locally(required for tests):
+How to install dev requirements locally(required for tests):
 
-`pip3 install -r requirements.txt`
+`pip3 install -r requirements/dev.txt`
+
+How to install prod requirements:
+
+`pip3 install -r requirements/prod.txt`
 
 How to run tests with XML report:
 
