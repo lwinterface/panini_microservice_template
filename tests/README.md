@@ -5,4 +5,4 @@
 
 ### run using unittest
 - `pip install -r unittest-xml-reporting`
-- `python -m xmlrunner tests.test_using_unittest`
+- `python -m xmlrunner`

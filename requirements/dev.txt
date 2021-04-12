@@ -1,0 +1,4 @@
+-r prod.txt
+unittest-xml-reporting==3.0.4
+pre-commit==2.12.0
+pytest==6.2.3

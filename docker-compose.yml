@@ -21,4 +21,4 @@ services:
       context: .
       dockerfile: Dockerfile
     env_file:
-      - .env
+      - environments/.env.dev

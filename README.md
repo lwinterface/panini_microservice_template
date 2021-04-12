@@ -17,15 +17,24 @@ How to run project with connection to remote NATS server:
 
 `docker-compose -f docker-compose.remote.yml up --build`
 
-(required `.env.remote` file that shouldn't be included in repository)
+(required `requirements/.env.remote` file that shouldn't be included in repository)
 
-How to install requirements locally(required for tests):
+How to install dev requirements locally(required for tests):
 
-`pip3 install -r requirements.txt`
+`pip3 install -r requirements/dev.txt`
+
+How to install prod requirements:
+
+`pip3 install -r requirements/prod.txt`
 
 How to run tests with XML report:
 
 `python3 -m pytest --junitxml=test-results/out.xml`
+
+### Codestyle
+- we are using `black`, `flake8` and `pre-commit` (for management)
+- run `pre-commit install` locally to initialize codestyle checks before each commit
+- modify `pyproject.toml` or `.flake8` configuration if needed
 
 ### NATS subjects
 
