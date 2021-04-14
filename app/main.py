@@ -3,7 +3,7 @@ from app.utils import get_broker, get_config_path, get_config
 
 BROKER_HOST, BROKER_PORT = get_broker()
 CONFIG_PATH = get_config_path()
-some_config = get_config('some-config.yml', path=CONFIG_PATH)
+some_config = get_config("some-config.yml", path=CONFIG_PATH)
 
 
 app = panini_app.App(
