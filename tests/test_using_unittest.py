@@ -9,14 +9,12 @@ BROKER_HOST, BROKER_PORT = get_broker(True)
 
 def run_app():
     from app.main import app
+
     app.start()
 
 
 class TestApp(TestCase):
-    client = TestClient(
-        run_app,
-        base_nats_url=f"nats://{BROKER_HOST}:{BROKER_PORT}"
-    )
+    client = TestClient(run_app, base_nats_url=f"nats://{BROKER_HOST}:{BROKER_PORT}")
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -32,5 +30,6 @@ class TestApp(TestCase):
         self.assertEqual(response["data"]["message"], "test")
 
     def test_not_existing_subject(self):
-        self.assertRaises(OSError, self.client.request, "not.existing.subject", {"message": "test"})
-
+        self.assertRaises(
+            OSError, self.client.request, "not.existing.subject", {"message": "test"}
+        )

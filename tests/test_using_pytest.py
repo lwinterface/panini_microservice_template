@@ -9,14 +9,14 @@ BROKER_HOST, BROKER_PORT = get_broker(True)
 
 def run_app():
     from app.main import app
+
     app.start()
 
 
 @pytest.fixture(scope="module")
 def client():
     client = TestClient(
-        run_app,
-        base_nats_url=f"nats://{BROKER_HOST}:{BROKER_PORT}"
+        run_app, base_nats_url=f"nats://{BROKER_HOST}:{BROKER_PORT}"
     ).start()
     yield client
     client.stop()
