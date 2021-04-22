@@ -2,9 +2,10 @@ from unittest import TestCase
 
 from panini.test_client import TestClient
 
-from app.utils import get_broker
+from app.utils import Environment
 
-BROKER_HOST, BROKER_PORT = get_broker(True)
+Environment.load("test")
+BROKER_HOST, BROKER_PORT = Environment.get_broker()
 
 
 def run_app():
