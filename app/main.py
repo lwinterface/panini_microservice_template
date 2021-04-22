@@ -1,9 +1,10 @@
 from panini import app as panini_app
-from app.utils import get_broker, get_config_path, get_config
+from app.utils import Environment
 
-BROKER_HOST, BROKER_PORT = get_broker()
-CONFIG_PATH = get_config_path()
-some_config = get_config('some-config.yml', path=CONFIG_PATH)
+Environment.load("test")
+BROKER_HOST, BROKER_PORT = Environment.get_broker()
+CONFIG_PATH = Environment.get_config_path()
+some_config = Environment.get_config("some-config.yml", path=CONFIG_PATH)
 
 
 app = panini_app.App(

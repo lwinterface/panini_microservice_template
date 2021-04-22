@@ -15,10 +15,14 @@ services:
     image: nats:latest
   app:
     volumes:
-      - ./app:/microservice
+      - ./app:/app
       - ./config:/config # add configs if required
     build:
       context: .
       dockerfile: Dockerfile
+    command: >
+      sh -c "python -m app.main"
+    depends_on:
+      - nats-server
     env_file:
       - environments/.env.dev

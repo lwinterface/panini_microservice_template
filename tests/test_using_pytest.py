@@ -2,21 +2,22 @@ import pytest
 
 from panini.test_client import TestClient
 
-from app.utils import get_broker
+from app.utils import Environment
 
-BROKER_HOST, BROKER_PORT = get_broker(True)
+Environment.load("test")
+BROKER_HOST, BROKER_PORT = Environment.get_broker()
 
 
 def run_app():
     from app.main import app
+
     app.start()
 
 
 @pytest.fixture(scope="module")
 def client():
     client = TestClient(
-        run_app,
-        base_nats_url=f"nats://{BROKER_HOST}:{BROKER_PORT}"
+        run_app, base_nats_url=f"nats://{BROKER_HOST}:{BROKER_PORT}"
     ).start()
     yield client
     client.stop()
