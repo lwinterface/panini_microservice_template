@@ -20,5 +20,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    command: >
+      sh -c "python -m app.main"
+    depends_on:
+      - nats-server
     env_file:
       - environments/.env.dev

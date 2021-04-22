@@ -6,6 +6,6 @@ ADD requirements/dev.txt /
 ADD requirements/prod.txt /
 RUN pip install -r dev.txt
 
-WORKDIR ./
-
-ENTRYPOINT [ "python", "-m", "app.main" ]
+RUN mkdir /app
+WORKDIR /app
+COPY ./ /app
