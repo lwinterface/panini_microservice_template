@@ -15,8 +15,9 @@ services:
     image: nats:latest
   app:
     volumes:
-      - ./app:/app
-      - ./config:/config # add configs if required
+      - ./app:/app/app
+      - ./config:/app/config # add configs if required
+      - ./environments:/app/environments
     build:
       context: .
       dockerfile: Dockerfile
