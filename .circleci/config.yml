@@ -1,0 +1,206 @@
+orbs:
+  slack: circleci/slack@4.4.2
+version: 2.1
+parameters:
+  compose_run:
+    type: string
+    default: "docker-compose --compatibility -f ${CIRCLE_PROJECT_REPONAME}/docker-compose.${SERVER_ROLE}.yml"
+  vpn_config:
+    type: string
+    default: "/tmp/config.ovpn"
+
+workflows:
+  tests:
+    jobs:
+      - tests:
+          context: [test-server]
+          filters:
+            branches:
+              ignore: [develop, master, main, circleci-prod]
+  dev-deployment:
+    jobs:
+      - tests:
+          context: [test-server]
+          filters:
+            branches:
+              only: [develop, circleci-stage]
+      - deploy-to-server:
+          context: [openvpn, test-server]
+          filters:
+            branches:
+              only: [develop, circleci-stage]
+          requires: [tests]
+  prod-deployment:
+    jobs:
+      - tests:
+          context: [production]
+          filters:
+            branches:
+              only: [master, main, circleci-prod]
+      - deploy-to-server:
+          context: [production]
+          filters:
+            branches:
+              only: [master, main, circleci-prod]
+          requires: [tests]
+
+jobs:
+  deploy-to-server:
+    machine:
+      image: ubuntu-2004:202010-01
+      docker_layer_caching: true
+    steps:
+      - checkout
+      #- test-compose-file
+      - vpn-connect
+      - check-connect
+      - sync-and-run
+      - healthcheck
+      - vpn-disconnect
+      - slack-notify
+  tests:
+    docker:
+      - image: python:3.8.10-slim
+        environment:
+          MICROSERVICE_NAME: service-test
+          CONFIG_PATH: ../config/
+          BROKER_HOST: nats-server
+          BROKER_PORT: 4222
+      - image: nats
+        name: nats-server
+    resource_class: small
+    steps:
+      - checkout
+      - run:
+          name: Prepare environment
+          command: |
+            pip3 install -r requirements/dev.txt
+            apt-get update ; apt -qq -y install curl
+      - run:
+          name: Run tests
+          command: python3 -m pytest --junitxml=test-results/out.xml
+      - store_test_results:
+          path: test-results
+      - slack-testsfail-notify
+
+commands:
+  healthcheck:
+    steps:
+      - run:
+          name: Healthcheck for containers
+          command: |
+            if ! (cat docker-compose.${SERVER_ROLE}.yml | grep -v ^# | grep -q MICROSERVICE_NAME) ; then
+              echo "Nothing to check" ; exit 0 ;
+            fi
+            ssh server "sh watchdog_livecheck/generate.sh"
+            ssh server "docker-compose -f watchdog_livecheck/docker-compose.${SERVER_ROLE}.yml restart"
+            sleep 30;
+            if  curl -sI ${HOST_IP}:55555/status | grep -q 200 && [ $(curl -s ${HOST_IP}:55555/status | jq -r '.status') != "running" ] ; then
+              sleep 30;
+            fi
+            exitcode=0
+            for i in $(cat docker-compose.${SERVER_ROLE}.yml | grep -v ^# | grep MICROSERVICE_NAME | awk -F':|=' '{ print $2 }' | sed "s/'//g; s/\ //g") ; do
+              if [ $(curl -s ${HOST_IP}:55555/status/$i | jq '.success') = "false" ] ; then
+                echo $i - false ; exitcode="1";
+              fi
+            done
+            exit $exitcode
+  test-compose-file:
+    steps:
+      - run:
+          name: Check docker-compose
+          command: |
+            echo << pipeline.parameters.compose_run >>
+            COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 << pipeline.parameters.compose_run >> build
+            << pipeline.parameters.compose_run >> up -d
+      #- healthcheck
+      - run:
+          name: Shutdown containers
+          command: << pipeline.parameters.compose_run >> stop
+      - run:
+          name: Clean directory
+          command: sudo git reset --hard ; sudo git clean -fXd
+  vpn-connect:
+    steps:
+      - run:
+          name: Install openvpn
+          command: |
+            sudo apt -qq update ; sudo apt -qq install apt-transport-https jq
+            sudo wget https://swupdate.openvpn.net/repos/openvpn-repo-pkg-key.pub
+            sudo apt-key add openvpn-repo-pkg-key.pub
+            sudo wget -O /etc/apt/sources.list.d/openvpn3.list https://swupdate.openvpn.net/community/openvpn3/repos/openvpn3-focal.list
+            sudo apt -qq update ; sudo apt -qq install openvpn3
+      - run:
+          name: VPN setup
+          command: |
+            echo $VPN_CLIENT_CONFIG | base64 -di > << pipeline.parameters.vpn_config >>
+            echo $VPN_CLIENT_PASSWORD | base64 -di | openvpn3 session-start --config << pipeline.parameters.vpn_config >>
+  vpn-disconnect:
+    steps:
+      - run:
+          name: Disconnect
+          command: openvpn3 session-manage --disconnect --config << pipeline.parameters.vpn_config >>
+  check-connect:
+    steps:
+      - run:
+          name: Check connection
+          command: ping -q -w 1 -c 1 $HOST_IP > /dev/null && echo "Connection ok" || (echo "Host $HOST_IP is unreachable" && exit 1)
+  sync-and-run:
+    steps:
+      - run:
+          name: Add ssh key and setup ssh
+          command: |
+            echo $SSH_KEY | base64 -di > ~/.ssh/circleci
+            chmod 600 ~/.ssh/circleci && chmod 700 ~/.ssh
+            echo -e "ControlMaster auto\nControlPath ~/.ssh/control-%C\nControlPersist yes" > ~/.ssh/config
+            echo -e "Host server\n  Hostname $HOST_IP\n  User circleci\n  IdentityFile ~/.ssh/circleci\n  StrictHostKeyChecking no" >> ~/.ssh/config
+      - run:
+          name: Sync repo
+          command: rsync -e ssh --owner=circleci --group=circleci -r /home/circleci/project/ server:/home/circleci/$CIRCLE_PROJECT_REPONAME
+      - run:
+          name: Run containers
+          command: |
+            docker context create server --docker "host=ssh://server"
+            docker context use server
+            ssh server "<< pipeline.parameters.compose_run >> build"
+            ssh server "COMPOSE_HTTP_TIMEOUT=120 << pipeline.parameters.compose_run >> up -d"
+
+  slack-testsfail-notify:
+    steps:
+      - slack/notify:
+          event: fail
+          custom: |
+            {"blocks": [{"type": "header","text": {"type": "plain_text","text": "Job Failed. :red_circle:","emoji": true }},
+            {"type": "section","fields": [{"type": "mrkdwn","text": "*Job*: ${CIRCLE_JOB}"},
+            {"type": "mrkdwn","text": "*Project*:\n$CIRCLE_PROJECT_REPONAME"},
+            {"type": "mrkdwn","text": "*Branch*:\n$CIRCLE_BRANCH"},
+            {"type": "mrkdwn","text": "*Author*:\n$CIRCLE_USERNAME"}],
+            "accessory": {"type": "image","image_url": "https://assets.brandfolder.com/otz5mn-bw4j2w-6jzqo8/original/circle-logo-badge-black.png","alt_text": "CircleCI logo"}},
+            {"type": "section","fields": [{"type": "mrkdwn","text": "*Mentions*:\n$SLACK_PARAM_MENTIONS"}]},
+            {"type": "actions","elements": [{"type": "button","text": {"type": "plain_text","text": "View Job"},"url": "${CIRCLE_BUILD_URL}"}]}]}
+  slack-notify:
+    steps:
+      - slack/notify:
+          event: fail
+          custom: |
+            {"blocks": [{"type": "header","text": {"type": "plain_text","text": "Job Failed. :red_circle:","emoji": true	}},
+            {"type": "section","fields": [{"type": "mrkdwn","text": "*Job*: ${CIRCLE_JOB}"},
+            {"type": "mrkdwn","text": "*Server*: ${HOST_IP}"},
+            {"type": "mrkdwn","text": "*Project*:\n$CIRCLE_PROJECT_REPONAME"},
+            {"type": "mrkdwn","text": "*Branch*:\n$CIRCLE_BRANCH"},
+            {"type": "mrkdwn","text": "*Author*:\n$CIRCLE_USERNAME"}],
+            "accessory": {"type": "image","image_url": "https://assets.brandfolder.com/otz5mn-bw4j2w-6jzqo8/original/circle-logo-badge-black.png","alt_text": "CircleCI logo"}},
+            {"type": "section","fields": [{"type": "mrkdwn","text": "*Mentions*:\n$SLACK_PARAM_MENTIONS"}]},
+            {"type": "actions","elements": [{"type": "button","text": {"type": "plain_text","text": "View Job"},"url": "${CIRCLE_BUILD_URL}"}]}]}
+      - slack/notify:
+          event: pass
+          custom: |
+            { "blocks": [{"type": "header","text": {"type": "plain_text", "text": "Job Succeeded. :white_check_mark:","emoji": true }},
+            {"type": "section","fields": [{"type": "mrkdwn","text": "*Job*:\n${CIRCLE_JOB}"},
+            {"type": "mrkdwn","text": "*Server*:\n${HOST_IP}"},
+            {"type": "mrkdwn","text": "*Project*:\n$CIRCLE_PROJECT_REPONAME"},
+            {"type": "mrkdwn","text": "*Branch*:\n $CIRCLE_BRANCH"},
+            {"type": "mrkdwn","text": "*Commit*:\n $CIRCLE_SHA1"},
+            {"type": "mrkdwn","text": "*Author*:\n $CIRCLE_USERNAME"}],
+            "accessory": {"type": "image","image_url": "https://assets.brandfolder.com/otz5mn-bw4j2w-6jzqo8/original/circle-logo-badge-black.png","alt_text": "CircleCI logo"}},
+            {"type": "actions","elements": [{"type": "button", "text": {"type": "plain_text", "text": "View Job"},"url": "${CIRCLE_BUILD_URL}"}]}]}
