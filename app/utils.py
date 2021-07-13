@@ -38,7 +38,7 @@ class Environment:
     @staticmethod
     def get_config(config, path=PATH, return_config_if_absent=None):
         if config is not None:
-            path = path + config
+            path = os.path.join(path, config)
         try:
             with open(path, "r") as yaml_conf:
                 yaml_config = yaml_conf.read()
