@@ -36,6 +36,10 @@ class Environment:
         return Environment.get_environment_variable("CONFIG_PATH")
 
     @staticmethod
+    def get_prometheus_pushgateway_url():
+        return Environment.get_environment_variable("PROMETHEUS_PUSHGATEWAY_URL")
+
+    @staticmethod
     def get_config(config, path=PATH, return_config_if_absent=None):
         if config is not None:
             path = os.path.join(path, config)

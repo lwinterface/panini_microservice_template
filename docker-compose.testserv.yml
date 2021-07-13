@@ -1,0 +1,33 @@
+version: '3.6'
+
+
+networks:
+  no-internet:
+    name: "no-internet"
+    internal: true
+    driver: bridge
+  internet:
+    name: "internet"
+    driver: bridge
+
+
+services:
+  app:
+    volumes:
+      - ./app:/app/app
+      - ./config:/app/config
+      - ./environments:/app/environments
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      sh -c "python -m app.main"
+    restart: always
+    env_file:
+      - environments/.env.testserv
+    environment:
+      NATS_MICROSERVICE: 1
+      MICROSERVICE_NAME: panini_microservice_template
+    networks:
+      - no-internet
+      - internet
