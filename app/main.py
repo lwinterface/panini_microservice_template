@@ -1,4 +1,6 @@
 from panini import app as panini_app
+from panini.middleware.prometheus_monitoring import PrometheusMonitoringMiddleware
+
 from app.utils import Environment
 
 Environment.load("test")
@@ -42,4 +44,9 @@ async def receive_messages(msg):
 
 
 if __name__ == "__main__":
+    if Environment.get_prometheus_pushgateway_url():
+        app.add_middleware(
+            PrometheusMonitoringMiddleware,
+            pushgateway_url=Environment.get_prometheus_pushgateway_url(),
+        )
     app.start()
