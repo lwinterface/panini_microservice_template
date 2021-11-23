@@ -30,7 +30,7 @@ async def publish():
         log.info(f"send message {message}")
 
 
-@app.timer_task(interval=2)
+@app.task(interval=2)
 async def request_periodically():
     for _ in range(10):
         response = await app.request(subject="some.request.subject", message=message)
