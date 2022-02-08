@@ -1,11 +1,8 @@
 import pytest
-
 from panini.test_client import TestClient
+from app.config_manager import get_panini_config
 
-from app.utils import Environment
-
-Environment.load("test")
-BROKER_HOST, BROKER_PORT = Environment.get_broker()
+panini_config = get_panini_config('test')
 
 
 def run_app():
@@ -17,7 +14,7 @@ def run_app():
 @pytest.fixture(scope="module")
 def client():
     client = TestClient(
-        run_app, base_nats_url=f"nats://{BROKER_HOST}:{BROKER_PORT}"
+        run_app, base_nats_url=panini_config.nats_servers[0]
     ).start()
     yield client
     client.stop()

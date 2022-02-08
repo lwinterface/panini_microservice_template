@@ -1,13 +1,10 @@
 import asyncio
-
 import pytest
-
 from panini.async_test_client import AsyncTestClient
+from app.config_manager import get_panini_config
+from nats.errors import NoRespondersError
 
-from app.utils import Environment
-
-Environment.load("test")
-BROKER_HOST, BROKER_PORT = Environment.get_broker()
+panini_config = get_panini_config('test')
 
 
 def run_app():
@@ -18,10 +15,12 @@ def run_app():
 
 @pytest.fixture
 async def client():
+    nats_port = panini_config.nats_servers[0].split(':')[-1]
+    nats_host = panini_config.nats_servers[0].replace(':'+nats_port, '')
     client = AsyncTestClient(
         run_app,
-        nats_host=BROKER_HOST,
-        nats_port=BROKER_PORT,
+        nats_host=nats_host,
+        nats_port=nats_port,
     )
     await client.start()
     yield client
@@ -37,5 +36,5 @@ async def test_receive_message(client):
 
 @pytest.mark.asyncio
 async def test_failure(client):
-    with pytest.raises(asyncio.TimeoutError):
+    with pytest.raises(NoRespondersError):
         await client.request("not.existing.subject", {"message": "test"})
