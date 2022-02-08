@@ -83,10 +83,14 @@ def get_panini_config(env: str = None) -> PaniniConfig:
     infrastructure_config_filename = config_path + Environment.get_infrastructure_config()
     with open(infrastructure_config_filename, 'r') as file:
         infrastructure_config = yaml.load(file, Loader=yaml.FullLoader)
+        if not infrastructure_config:
+            infrastructure_config = {}
         panini_config['infrastructure'] = infrastructure_config
     custom_config_filename = config_path + Environment.get_custom_config()
     with open(custom_config_filename, 'r') as file:
         custom_config = yaml.load(file, Loader=yaml.FullLoader)
+        if not custom_config:
+            custom_config = {}
         panini_config['custom'] = custom_config
     nats_client_name = get_nats_client_name_from_args()
     if nats_client_name:
