@@ -9,12 +9,15 @@ from dotenv import load_dotenv
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
+PANINI_CONFIG = None
+
 @dataclass
 class PaniniConfig:
     service_name: str
     nats_servers: List
     monitoring_servers: List
     infrastructure: Dict
+    logging: Dict
     custom: Dict
     nats_client_name: str = None
 
@@ -61,37 +64,44 @@ class Environment:
         return Environment.get_environment_variable("INFRASTRUCTURE_CONFIG_FILE")
 
     @staticmethod
+    def get_logging_config():
+        return Environment.get_environment_variable("LOGGING_CONFIG_FILE")
+
+    @staticmethod
     def get_custom_config():
         return Environment.get_environment_variable("CUSTOM_CONFIG_FILE")
 
+def _get_config(config_path, config_file, default=None):
+    main_config_filename = config_path + config_file
+    with open(main_config_filename, 'r') as file:
+        config = yaml.load(file, Loader=yaml.FullLoader)
+    if not config:
+        return default
+    return config
 
 def get_panini_config(env: str = None) -> PaniniConfig:
     Environment.load(env)
     panini_config = {}
     absolute_path = os.getcwd()
-    if absolute_path.endswith('/app'):
-        absolute_path = absolute_path.replace('/app','')
+    if absolute_path.endswith("/app"):
+        absolute_path = absolute_path.replace("/app", "")
     config_path = absolute_path + Environment.get_config_path()
-    main_config_filename = config_path + Environment.get_main_config()
-    with open(main_config_filename, 'r') as file:
-        main_config = yaml.load(file, Loader=yaml.FullLoader)
-        panini_config.update(main_config)
-    nats_config_filename = config_path + Environment.get_nats_config()
-    with open(nats_config_filename, 'r') as file:
-        nats_config = yaml.load(file, Loader=yaml.FullLoader)
-        panini_config.update(nats_config)
-    infrastructure_config_filename = config_path + Environment.get_infrastructure_config()
-    with open(infrastructure_config_filename, 'r') as file:
-        infrastructure_config = yaml.load(file, Loader=yaml.FullLoader)
-        if not infrastructure_config:
-            infrastructure_config = {}
-        panini_config['infrastructure'] = infrastructure_config
-    custom_config_filename = config_path + Environment.get_custom_config()
-    with open(custom_config_filename, 'r') as file:
-        custom_config = yaml.load(file, Loader=yaml.FullLoader)
-        if not custom_config:
-            custom_config = {}
-        panini_config['custom'] = custom_config
+
+    main_config = _get_config(config_path, Environment.get_main_config())
+    panini_config.update(main_config)
+
+    nats_config = _get_config(config_path, Environment.get_nats_config())
+    panini_config.update(nats_config)
+
+    infrastructure_config = _get_config(config_path, Environment.get_infrastructure_config(), default={})
+    panini_config["infrastructure"] = infrastructure_config
+
+    logging_config = _get_config(config_path, Environment.get_logging_config(), default={})
+    panini_config['logging'] = logging_config
+
+    custom_config = _get_config(config_path, Environment.get_custom_config(), default={})
+    panini_config['custom'] = custom_config
+
     nats_client_name = get_nats_client_name_from_args()
     if nats_client_name:
         panini_config['nats_client_name'] = nats_client_name
@@ -99,6 +109,8 @@ def get_panini_config(env: str = None) -> PaniniConfig:
         data_class=PaniniConfig,
         data=panini_config,
     )
+    global PANINI_CONFIG
+    PANINI_CONFIG = united_config
     return united_config
 
 
