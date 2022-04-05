@@ -19,6 +19,7 @@ class PaniniConfig:
     infrastructure: Dict
     logging: Dict
     custom: Dict
+    internal_configs: Dict = None
     nats_client_name: str = None
 
     def __post_init__(self):
@@ -71,6 +72,12 @@ class Environment:
     def get_custom_config():
         return Environment.get_environment_variable("CUSTOM_CONFIG_FILE")
 
+    @staticmethod
+    def get_config_environment_variable(variable: str, config_type: str):
+        config_path = Environment.get_environment_variable(variable)
+        return _get_config(config_path, config_type)
+
+
 def _get_config(config_path, config_file, default=None):
     main_config_filename = config_path + config_file
     with open(main_config_filename, 'r') as file:
@@ -89,6 +96,12 @@ def get_panini_config(env: str = None) -> PaniniConfig:
 
     main_config = _get_config(config_path, Environment.get_main_config())
     panini_config.update(main_config)
+
+    panini_config["internal_configs"] = {}
+    if "internal_configs" in main_config and main_config["internal_configs"]:
+        for internal_config_name, internal_config_path in main_config["internal_configs"].items():
+            internal_config_path = internal_config_path.replace('./', '')
+            panini_config["internal_configs"][internal_config_name] = _get_config(config_path, internal_config_path)
 
     nats_config = _get_config(config_path, Environment.get_nats_config())
     panini_config.update(nats_config)

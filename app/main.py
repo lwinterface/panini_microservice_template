@@ -1,14 +1,15 @@
 from panini import app as panini_app
 from panini.middleware.prometheus_monitoring import PrometheusMonitoringMiddleware
 from app.config_manager import get_panini_config, Environment
-from app.utils.logging.loki_logger import LokiLogger
+from app.utils.logging.loki_logger import Logger
 
 
-panini_config = get_panini_config("local")
-logger = LokiLogger.make_loki_logger(
+panini_config = get_panini_config("remote")
+logger = Logger.make_logger(
     panini_config.logging,
-    custom_tags={'supercustom_conf': 'abcd'}
+    custom_tags={'somekey': 'somevalue'}
 )
+
 
 
 app = panini_app.App(
