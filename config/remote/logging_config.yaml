@@ -26,18 +26,18 @@ handlers:
     formatter: detailed
     level: ERROR
     mode: a
-  loki:
-    class: app.utils.logging.loki_logger.Logger
-    formatter: detailed
-    level: INFO
-    stream: http://localhost:3100/loki/api/v1/push
-    tags: {}
+#  loki:
+#    class: app.utils.logging.loki_logger.Logger
+#    formatter: detailed
+#    level: INFO
+#    stream: http://10.0.2.3:3100/loki/api/v1/push
+#    tags: {"appf": "app-f"}
 loggers: {}
 root:
   handlers:
   - console
   - errors
   - app
-  - loki
+#  - loki
   level: DEBUG
 version: 1

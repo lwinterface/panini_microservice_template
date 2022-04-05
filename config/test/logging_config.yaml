@@ -27,7 +27,7 @@ handlers:
     level: ERROR
     mode: a
   loki:
-    class: app.utils.logging.loki_logger.LokiLogger
+    class: app.utils.logging.loki_logger.Logger
     formatter: detailed
     level: INFO
     stream: http://localhost:3100/loki/api/v1/push
