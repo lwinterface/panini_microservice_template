@@ -10,13 +10,17 @@ logger = Logger.make_logger(
     custom_tags={'somekey': 'somevalue'}
 )
 
-
+async def _nats_network_callback(exception):
+    logger.error("nats: encountered error")
+    logger.exception(exception)
+    exit()
 
 app = panini_app.App(
     service_name="template_app",
     servers=panini_config.nats_servers,
     client_nats_name=panini_config.nats_client_name,
     custom_logger=logger,
+    error_cb=_nats_network_callback,
 )
 
 
