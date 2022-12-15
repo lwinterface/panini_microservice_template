@@ -1,0 +1,4 @@
+service_name: template_app
+internal_configs:
+  internal_config_1_name: ./internal_config/internal_config1.yaml
+  internal_config_2_name: ./internal_config/internal_config2.yaml

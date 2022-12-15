@@ -1,0 +1,4 @@
+nats_servers:
+  - nats://10.0.2.3:4222
+monitoring_servers:
+  - http://10.0.2.3:8222
