@@ -1,3 +1,5 @@
-panini==0.6.2
+panini==0.8.0
 PyYAML==5.4
 python-dotenv==0.17.0
+dacite==1.6.0
+aiohttp==3.8.1

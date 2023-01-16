@@ -9,6 +9,7 @@ services:
       - "4222"
       - "-m"
       - "8222"
+      - "-js"
     ports:
       - 4222:4222
       - 8222:8222
@@ -26,4 +27,4 @@ services:
     depends_on:
       - nats-server
     env_file:
-      - environments/.env.dev
+      - environments/.env.container
