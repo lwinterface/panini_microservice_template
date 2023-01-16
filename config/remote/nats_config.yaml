@@ -1,7 +1,7 @@
 nats_servers:
-  - nats://nats-server:4222
+  - nats://127.0.0.1:4222
 monitoring_servers:
-  - http://nats-server:8222
+  - http://127.0.0.1:8222
 auth:
   user: b
   password: s3cr3t
