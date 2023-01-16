@@ -9,7 +9,8 @@ panini_config = get_panini_config()
 app = panini_app.App(
     service_name="template_app",
     servers=panini_config.nats_servers,
-    client_nats_name=panini_config.nats_client_name
+    client_nats_name=panini_config.nats_client_name,
+    auth=panini_config.auth,
 )
 
 
